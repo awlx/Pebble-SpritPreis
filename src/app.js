@@ -6,6 +6,7 @@
 var UI = require('ui');
 var Vector2 = require('vector2');
 var ajax = require('ajax');
+var apikey = "";
 // Show splash screen while waiting for data
 var splashWindow = new UI.Window();
 
@@ -13,7 +14,7 @@ var splashWindow = new UI.Window();
 var text = new UI.Text({
   position: new Vector2(0, 0),
   size: new Vector2(144, 168),
-  text:'Waiting for Fuel Prices ... If nothing happens please visit Settings',
+  text:'Waiting for Fuel Prices ...',
   font:'GOTHIC_28_BOLD',
   color:'black',
   textOverflow:'wrap',
@@ -21,7 +22,6 @@ var text = new UI.Text({
   backgroundColor:'white'
 });
 
-// Add to splashWindow and show
 splashWindow.add(text);
 splashWindow.show();
 
@@ -34,6 +34,21 @@ function success(pos) {
 
 function error(err) {
   console.log('location error (' + err.code + '): ' + err.message);
+  var failure = new UI.Window();
+  var text = new UI.Text({
+  position: new Vector2(0, 0),
+  size: new Vector2(144, 168),
+  text:'Failed to get GPS data. Please see Settingspage.',
+  font:'GOTHIC_28_BOLD',
+  color:'black',
+  textOverflow:'wrap',
+  textAlign:'center',
+  backgroundColor:'white'
+  });
+
+  failure.add(text);
+  failure.show();
+  splashWindow.hide();
 }
 
 /* ... */
@@ -42,13 +57,11 @@ function error(err) {
 var options = {
   enableHighAccuracy: true,
   maximumAge: 10000,
-  timeout: 10000
+  timeout: 10
 };
 
-// Request current position
 console.log(localStorage.getItem(3));
-if (!localStorage.getItem(3) || parseInt(localStorage.getItem(3))===0) {
-  console.log("bla");
+if (!localStorage.getItem(3) || parseInt(localStorage.getItem(3))===0 || isNaN(localStorage.getItem(3))) {
    navigator.geolocation.getCurrentPosition(success, error, options);
 } else {
   var postalCode = localStorage.getItem(3);
@@ -76,12 +89,14 @@ if (!localStorage.getItem(3) || parseInt(localStorage.getItem(3))===0) {
 
 function getFuelPrice(latitude,longitude) {
   var distance = 5;
-  var sort = "price";
-  if (localStorage.getItem(1) && localStorage.getItem(2)) {
+  var sort = "dist";
+  var type = "e5";
+  if (localStorage.getItem(1) && localStorage.getItem(2) && localStorage.getItem(4)) {
     distance = localStorage.getItem(1);
     sort = localStorage.getItem(2);
+    type = localStorage.getItem(4);
   }
-  var URL = 'https://creativecommons.tankerkoenig.de/json/list.php' + "?lat=" + latitude + "&lng=" + longitude + "&rad=" + distance + "&sort=" + sort + "&type=e10&apikey=";
+  var URL = 'https://creativecommons.tankerkoenig.de/json/list.php' + "?lat=" + latitude + "&lng=" + longitude + "&rad=" + distance + "&sort=" + sort + "&type=" + type + "&apikey=" + apikey;
   ajax(
   {
     url: URL,
@@ -90,19 +105,29 @@ function getFuelPrice(latitude,longitude) {
   function(data) {
     // Success!
     var menuItems = [];
-    console.log('Successfully fetched fuel prices!' + JSON.stringify(data));
     if (typeof(data.stations[0])==='undefined') {
       console.log("Nothing to return");
+      var failure = new UI.Window();
+      var text = new UI.Text({
+          position: new Vector2(0, 0),
+          size: new Vector2(144, 168),
+          text:'Load failed. Please visit Settinspage.',
+          font:'GOTHIC_28_BOLD',
+          color:'black',
+          textOverflow:'wrap',
+          textAlign:'center',
+          backgroundColor:'white'
+      });
+
+      failure.add(text);
+      failure.show();
+      splashWindow.hide();
       return 0;
     }
     
     // Create an array of Menu items
-    menuItems = parseFeed(data, 5);
+    menuItems = parseFeed(data);
 
-    // Check the items are extracted OK
-    for(var i = 0; i < menuItems.length; i++) {
-        console.log(menuItems[i].title + ' | ' + menuItems[i].subtitle) ;
-    }
     showUserData(menuItems,data);
     
   },
@@ -114,8 +139,10 @@ function getFuelPrice(latitude,longitude) {
   
 }
 
-function parseFeed(data, quantity) {
+function parseFeed(data) {
   var items = [];
+  var quantity = data.stations.length;
+  console.log(quantity + "items");
   for(var i = 0; i < quantity; i++) {
     var name = "";
     if (!data.stations[i].brand) {
@@ -139,12 +166,13 @@ function parseFeed(data, quantity) {
 function getDetails(index,data) {
   var content = "No details available";
   if (data.stations[index].brand) {
-    content = data.stations[index].postCode + " " + data.stations[index].place + " " + data.stations[index].street + " " + data.stations[index].houseNumber;
+    content = data.stations[index].dist + "km | " + data.stations[index].postCode + " " + data.stations[index].place + " " + data.stations[index].street + " " + data.stations[index].houseNumber;
   }
   var detailCard = new UI.Card({
     title:'Details',
     subtitle:data.stations[index].name,
-    body: content
+    body: content,
+    scrollable:true
   });
   detailCard.show();
 
@@ -175,15 +203,16 @@ Pebble.addEventListener('showConfiguration', function() {
 
 Pebble.addEventListener('webviewclosed', function(e) {
   var configData = JSON.parse(decodeURIComponent(e.response));
-  console.log('Configuration page returned: ' + JSON.stringify(configData));
+  //console.log('Configuration page returned: ' + JSON.stringify(configData));
 
   var dict = {};
   dict.distance = parseInt(configData.distance, 10);
   dict.sort = configData.sort;
   dict.postalCode = parseInt(configData.postalCode);
+  dict.type = configData.type;
   console.log('dict: ' + JSON.stringify(dict));
     localStorage.setItem(1, dict.distance);  
     localStorage.setItem(2, dict.sort);
     localStorage.setItem(3, dict.postalCode);
- 
+    localStorage.setItem(4, dict.type);
 });
