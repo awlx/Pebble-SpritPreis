@@ -2,38 +2,49 @@
 var UI = require('ui');
 var Vector2 = require('vector2');
 var ajax = require('ajax');
+var Accel = require('ui/accel');
+var Vibe = require('ui/vibe');
 
-//ApiKey
+// ApiKey
 var apikey = "";
 
+// Prepare the accelerometer
+Accel.init();
+
+// GPS Options
+var options = {
+    enableHighAccuracy: true,
+    maximumAge: 10000,
+    timeout: 10000
+};
+
 // Show splash screen while waiting for data
-var splashWindow = new UI.Window();
+var splashWindow = new UI.Window({ fullscreen: true });
 
 // Loading Screen
-var text = new UI.Text({
-  position: new Vector2(0, 0),
-  size: new Vector2(144, 168),
-  text:'Waiting for Fuel Prices ...',
-  font:'GOTHIC_28_BOLD',
-  color:'blue',
-  textOverflow:'wrap',
-  textAlign:'center',
-  backgroundColor:'white'
-});
-
 var startImage = new UI.Image({
   position: new Vector2(0, 0),
   size: new Vector2(144, 168),
-  image: 'startScreen.png'
+  image: 'images/startScreen.png',
 });
 
-//splashWindow.add(text);
+// Show StartScreen
 splashWindow.add(startImage);
 splashWindow.show();
+
+// Start App
 entryPoint();
 
 function entryPoint() {
-  if (!localStorage.getItem(3) || parseInt(localStorage.getItem(3))===0 || isNaN(localStorage.getItem(3))) {
+  //Initialise App on first start
+  if (!localStorage.getItem(1) && !localStorage.getItem(2) && !localStorage.getItem(3) && !localStorage.getItem(4)) {
+    localStorage.setItem(1, 5);
+    localStorage.setItem(2, "price");
+    localStorage.setItem(3, 0);
+    localStorage.setItem(4, "e5");
+  }
+  
+  if (parseInt(localStorage.getItem(3))===0 || isNaN(localStorage.getItem(3))) {
      navigator.geolocation.getCurrentPosition(success, error, options);
   } else {
     var postalCode = localStorage.getItem(3);
@@ -57,6 +68,7 @@ function entryPoint() {
         }
   );
   }
+
   function success(pos) {
       var latitude = pos.coords.latitude;
       var longitude = pos.coords.longitude;
@@ -86,24 +98,13 @@ function entryPoint() {
   /* ... */
   
   // Choose options about the data returned
-  var options = {
-    enableHighAccuracy: true,
-    maximumAge: 10000,
-    timeout: 10000
-  };
-  
-
 }
 
 function getFuelPrice(latitude,longitude) {
-  var distance = 5;
-  var sort = "dist";
-  var type = "e5";
-  if (localStorage.getItem(1) && localStorage.getItem(2) && localStorage.getItem(4)) {
-    distance = localStorage.getItem(1);
-    sort = localStorage.getItem(2);
-    type = localStorage.getItem(4);
-  }
+  var distance = localStorage.getItem(1);
+  var sort = localStorage.getItem(2);
+  var type = localStorage.getItem(4);
+
   var URL = 'https://creativecommons.tankerkoenig.de/json/list.php' + "?lat=" + latitude + "&lng=" + longitude + "&rad=" + distance + "&sort=" + sort + "&type=" + type + "&apikey=" + apikey;
   ajax(
   {
@@ -186,16 +187,32 @@ function getDetails(index,data) {
 
 }
 
-function showUserData(menuItems,data,type,distance) {
+function showUserData(menuItems,data,type,distance,postalCode) {
+  
   // Construct Menu to show to user
+  var gps = "GPS: on";
+  if (localStorage.getItem(3)!==0 && !(isNaN(localStorage.getItem(3)))) {
+    gps = localStorage.getItem(3);
+  }  
 var resultsMenu = new UI.Menu({
   sections: [{
-    title: type.charAt(0).toUpperCase() + type.slice(1) + ' - Radius: ' + distance + 'km',
+    title: type.charAt(0).toUpperCase() + type.slice(1) + ' - ' + gps + ' - Radius: ' + distance + 'km',
     items: menuItems
   }]
 });
   resultsMenu.show();
+
   splashWindow.hide();
+    // Notify the user
+  Vibe.vibrate('short');
+  
+  // Register for 'tap' events
+  resultsMenu.on('accelTap', function(e) {
+    console.log('TAP!');
+    console.log('axis: ' + e.axis + ', direction:' + e.direction);
+    entryPoint();
+
+  });
   // Add an action for SELECT
   resultsMenu.on('select', function(e) {
     console.log('Item number ' + e.itemIndex + ' was pressed!');
@@ -204,7 +221,16 @@ var resultsMenu = new UI.Menu({
 } 
 
 Pebble.addEventListener('showConfiguration', function() {
-  var url = 'https://pebble.penguinfriends.org/configurable2.html';
+  var sort = localStorage.getItem(2);
+  var distance = localStorage.getItem(1);
+  var type = localStorage.getItem(4);
+  var postalCode = localStorage.getItem(3);
+  
+  
+  var configData = '{"distance":'+ distance +',"sort":"'+ sort +'","postalCode":' + postalCode + ',"type":"' + type + '"}';
+  
+  
+  var url = 'https://pebble.penguinfriends.org/configurable.html#' + encodeURIComponent(JSON.stringify(configData));
   console.log('Showing configuration page: ' + url);
   Pebble.openURL(url);
 });
@@ -219,8 +245,12 @@ Pebble.addEventListener('webviewclosed', function(e) {
   dict.postalCode = parseInt(configData.postalCode);
   dict.type = configData.type;
   console.log('dict: ' + JSON.stringify(dict));
-    localStorage.setItem(1, dict.distance);  
-    localStorage.setItem(2, dict.sort);
+  localStorage.setItem(1, dict.distance);  
+  localStorage.setItem(2, dict.sort);
+  if (dict.postalCode && !(isNaN(dict.postalCode))) {
     localStorage.setItem(3, dict.postalCode);
-    localStorage.setItem(4, dict.type);
+  } else {
+    localStorage.setItem(3,0);
+  }
+  localStorage.setItem(4, dict.type);
 });
