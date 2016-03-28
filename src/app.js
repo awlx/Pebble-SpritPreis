@@ -57,7 +57,7 @@ function error(err) {
 var options = {
   enableHighAccuracy: true,
   maximumAge: 10000,
-  timeout: 10
+  timeout: 10000
 };
 
 console.log(localStorage.getItem(3));
@@ -128,7 +128,7 @@ function getFuelPrice(latitude,longitude) {
     // Create an array of Menu items
     menuItems = parseFeed(data);
 
-    showUserData(menuItems,data);
+    showUserData(menuItems,data,type,distance);
     
   },
   function(error) {
@@ -178,11 +178,11 @@ function getDetails(index,data) {
 
 }
 
-function showUserData(menuItems,data) {
+function showUserData(menuItems,data,type,distance) {
   // Construct Menu to show to user
 var resultsMenu = new UI.Menu({
   sections: [{
-    title: 'Current Prices',
+    title: type.charAt(0).toUpperCase() + type.slice(1) + ' - Radius: ' + distance + 'km',
     items: menuItems
   }]
 });
@@ -196,14 +196,14 @@ var resultsMenu = new UI.Menu({
 } 
 
 Pebble.addEventListener('showConfiguration', function() {
-  var url = 'https://pebble.penguinfriends.org/index.html';
+  var url = 'https://pebble.penguinfriends.org/configurable.html';
   console.log('Showing configuration page: ' + url);
   Pebble.openURL(url);
 });
 
 Pebble.addEventListener('webviewclosed', function(e) {
   var configData = JSON.parse(decodeURIComponent(e.response));
-  //console.log('Configuration page returned: ' + JSON.stringify(configData));
+  console.log('Configuration page returned: ' + JSON.stringify(configData));
 
   var dict = {};
   dict.distance = parseInt(configData.distance, 10);
