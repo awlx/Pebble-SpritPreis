@@ -1,91 +1,99 @@
-/**
- * Welcome to Pebble.js!
- *
- * This is where you write your app.
- */
+// Requires
 var UI = require('ui');
 var Vector2 = require('vector2');
 var ajax = require('ajax');
+
+//ApiKey
 var apikey = "";
+
 // Show splash screen while waiting for data
 var splashWindow = new UI.Window();
 
-// Text element to inform user
+// Loading Screen
 var text = new UI.Text({
   position: new Vector2(0, 0),
   size: new Vector2(144, 168),
   text:'Waiting for Fuel Prices ...',
   font:'GOTHIC_28_BOLD',
-  color:'black',
+  color:'blue',
   textOverflow:'wrap',
   textAlign:'center',
   backgroundColor:'white'
 });
 
-splashWindow.add(text);
-splashWindow.show();
-
-function success(pos) {
-    var latitude = pos.coords.latitude;
-    var longitude = pos.coords.longitude;
-    
-    getFuelPrice(latitude,longitude);
-}
-
-function error(err) {
-  console.log('location error (' + err.code + '): ' + err.message);
-  var failure = new UI.Window();
-  var text = new UI.Text({
+var startImage = new UI.Image({
   position: new Vector2(0, 0),
   size: new Vector2(144, 168),
-  text:'Failed to get GPS data. Please see Settingspage.',
-  font:'GOTHIC_28_BOLD',
-  color:'black',
-  textOverflow:'wrap',
-  textAlign:'center',
-  backgroundColor:'white'
-  });
+  image: 'startScreen.png'
+});
 
-  failure.add(text);
-  failure.show();
-  splashWindow.hide();
+//splashWindow.add(text);
+splashWindow.add(startImage);
+splashWindow.show();
+entryPoint();
+
+function entryPoint() {
+  if (!localStorage.getItem(3) || parseInt(localStorage.getItem(3))===0 || isNaN(localStorage.getItem(3))) {
+     navigator.geolocation.getCurrentPosition(success, error, options);
+  } else {
+    var postalCode = localStorage.getItem(3);
+      var gmaps = "http://maps.google.com/maps/api/geocode/json?components=country:DE|postal_code:" + postalCode;
+      ajax (
+        {
+        url: gmaps,
+        type: 'json'
+        },
+        function(gdata) {
+        // Success!        
+          var longitude = gdata.results[0].geometry.location.lng;
+          var latitude = gdata.results[0].geometry.location.lat;
+          console.log('Successfully fetched coordinates!' + longitude + " " + latitude);
+          getFuelPrice(latitude,longitude);
+      
+        },
+        function(error) {
+          // Failure!
+        console.log('Failed fetching fuel prices: ' + error);
+        }
+  );
+  }
+  function success(pos) {
+      var latitude = pos.coords.latitude;
+      var longitude = pos.coords.longitude;
+      
+      getFuelPrice(latitude,longitude);
+  }
+  
+  function error(err) {
+    console.log('location error (' + err.code + '): ' + err.message);
+    var failure = new UI.Window();
+    var text = new UI.Text({
+    position: new Vector2(0, 0),
+    size: new Vector2(144, 168),
+    text:'Failed to get GPS data. Please see Settingspage.',
+    font:'GOTHIC_28_BOLD',
+    color:'blue',
+    textOverflow:'wrap',
+    textAlign:'center',
+    backgroundColor:'white'
+    });
+  
+    failure.add(text);
+    failure.show();
+    splashWindow.hide();
+  }
+  
+  /* ... */
+  
+  // Choose options about the data returned
+  var options = {
+    enableHighAccuracy: true,
+    maximumAge: 10000,
+    timeout: 10000
+  };
+  
+
 }
-
-/* ... */
-
-// Choose options about the data returned
-var options = {
-  enableHighAccuracy: true,
-  maximumAge: 10000,
-  timeout: 10000
-};
-
-console.log(localStorage.getItem(3));
-if (!localStorage.getItem(3) || parseInt(localStorage.getItem(3))===0 || isNaN(localStorage.getItem(3))) {
-   navigator.geolocation.getCurrentPosition(success, error, options);
-} else {
-  var postalCode = localStorage.getItem(3);
-    var gmaps = "http://maps.google.com/maps/api/geocode/json?components=country:DE|postal_code:" + postalCode;
-    ajax (
-      {
-      url: gmaps,
-      type: 'json'
-      },
-      function(gdata) {
-      // Success!        
-        var longitude = gdata.results[0].geometry.location.lng;
-        var latitude = gdata.results[0].geometry.location.lat;
-        console.log('Successfully fetched coordinates!' + longitude + " " + latitude);
-        getFuelPrice(latitude,longitude);
-    
-      },
-      function(error) {
-        // Failure!
-      console.log('Failed fetching fuel prices: ' + error);
-      }
-);
-}
-
 
 function getFuelPrice(latitude,longitude) {
   var distance = 5;
@@ -196,7 +204,7 @@ var resultsMenu = new UI.Menu({
 } 
 
 Pebble.addEventListener('showConfiguration', function() {
-  var url = 'https://pebble.penguinfriends.org/configurable.html';
+  var url = 'https://pebble.penguinfriends.org/configurable2.html';
   console.log('Showing configuration page: ' + url);
   Pebble.openURL(url);
 });

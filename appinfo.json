@@ -29,6 +29,11 @@
                 "file": "fonts/UbuntuMono-Regular.ttf",
                 "name": "MONO_FONT_14",
                 "type": "font"
+            },
+            {
+                "file": "images/startScreen.png",
+                "name": "IMAGES_STARTSCREEN_PNG",
+                "type": "png"
             }
         ]
     },
