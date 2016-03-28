@@ -133,7 +133,8 @@ function getFuelPrice(latitude,longitude) {
       splashWindow.hide();
       return 0;
     }
-    data.stations.splice(10);
+    var remove = data.stations.length-10;
+    data.stations.splice(10, remove);
     // Create an array of Menu items
     menuItems = parseFeed(data);
 
