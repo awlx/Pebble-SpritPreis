@@ -133,7 +133,7 @@ function getFuelPrice(latitude,longitude) {
       splashWindow.hide();
       return 0;
     }
-    
+    data.stations.splice(10);
     // Create an array of Menu items
     menuItems = parseFeed(data);
 
@@ -151,7 +151,7 @@ function getFuelPrice(latitude,longitude) {
 function parseFeed(data) {
   var items = [];
   var quantity = data.stations.length;
-  console.log(quantity + "items");
+  console.log(quantity + " items");
   for(var i = 0; i < quantity; i++) {
     var name = "";
     if (!data.stations[i].brand) {
@@ -173,6 +173,7 @@ function parseFeed(data) {
 }
 
 function getDetails(index,data) {
+  console.log(data.stations.length);
   var content = "No details available";
   if (data.stations[index].brand) {
     content = data.stations[index].dist + "km | " + data.stations[index].postCode + " " + data.stations[index].place + " " + data.stations[index].street + " " + data.stations[index].houseNumber;
