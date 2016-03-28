@@ -8,8 +8,11 @@ var Vibe = require('ui/vibe');
 // ApiKey
 var apikey = "";
 
+
 // Prepare the accelerometer
 Accel.init();
+
+
 
 // GPS Options
 var options = {
@@ -20,12 +23,24 @@ var options = {
 
 // Show splash screen while waiting for data
 var splashWindow = new UI.Window({ fullscreen: true });
+var loadingWindow = new UI.Window({ fullscreen: true });
 
-// Loading Screen
+// Start Screen
 var startImage = new UI.Image({
   position: new Vector2(0, 0),
   size: new Vector2(144, 168),
   image: 'images/startScreen.png',
+});
+
+var loading = new UI.Text({
+    position: new Vector2(0, 0),
+    size: new Vector2(144, 168),
+    text:'Refreshing ...',
+    font:'GOTHIC_28_BOLD',
+    color:'blue',
+    textOverflow:'wrap',
+    textAlign:'center',
+    backgroundColor:'white'
 });
 
 // Show StartScreen
@@ -196,23 +211,44 @@ function showUserData(menuItems,data,type,distance,postalCode) {
   if (localStorage.getItem(3)!==0 && !(isNaN(localStorage.getItem(3)))) {
     gps = localStorage.getItem(3);
   }  
-var resultsMenu = new UI.Menu({
-  sections: [{
-    title: type.charAt(0).toUpperCase() + type.slice(1) + ' - ' + gps + ' - Radius: ' + distance + 'km',
-    items: menuItems
-  }]
-});
+
+    var resultsMenu = new UI.Menu({
+      sections: [{
+        title: type.charAt(0).toUpperCase() + type.slice(1) + ' - ' + gps + ' - Ø ' + distance + 'km',
+        items: menuItems
+      }]
+    });
   resultsMenu.show();
+  
+  
+  console.log("window index " + JSON.stringify(resultsMenu));
 
   splashWindow.hide();
+  loadingWindow.hide();
     // Notify the user
   Vibe.vibrate('short');
   
+  var running = 0;
+  var taps = 0;
   // Register for 'tap' events
   resultsMenu.on('accelTap', function(e) {
-    console.log('TAP!');
-    console.log('axis: ' + e.axis + ', direction:' + e.direction);
-    entryPoint();
+     console.log('TAP!');
+     console.log('axis: ' + e.axis + ', direction:' + e.direction);
+      taps += 1;
+      console.log("taps" + taps);
+      if (taps === 2 && running===0) {
+        running = 1;
+         // Show LoadingScreen
+       
+        loadingWindow.add(loading);
+        loadingWindow.show();
+          
+        resultsMenu.hide();
+        entryPoint();
+      
+      }
+
+
 
   });
   // Add an action for SELECT

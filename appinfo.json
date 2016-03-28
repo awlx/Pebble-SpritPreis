@@ -31,6 +31,11 @@
                 "type": "font"
             },
             {
+                "file": "images/loadingScreen.png",
+                "name": "IMAGES_LOADINGSCREEN_PNG",
+                "type": "png"
+            },
+            {
                 "file": "images/startScreen.png",
                 "name": "IMAGES_STARTSCREEN_PNG",
                 "type": "png"
@@ -45,7 +50,7 @@
     ],
     "uuid": "0b10fd7c-8c9c-41de-bda3-f4aa6ba30572",
     "versionCode": 1,
-    "versionLabel": "1.1",
+    "versionLabel": "1.2",
     "watchapp": {
         "hiddenApp": false,
         "watchface": false
