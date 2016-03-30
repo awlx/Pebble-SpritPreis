@@ -9,3 +9,4 @@ App to fetch fuel prices from german Website tankerkoenig.de.
 - Select search radius
 - Select sorting (distance or price)
 
+Developed and tested with RockPool (https://github.com/abranson/rockpool) PebbleApp for SFOS.
